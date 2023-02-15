@@ -32,7 +32,7 @@ class Purchase extends CI_Controller {
             $row = array();
             $row[] = $no;
             $row[] = date('d F Y', strtotime($field['transaction_date']));
-            $row[] = $field['sup_name'];
+            $row[] = '<a href="'.base_url('purchase/detail/'.$field['p_id']).'" target="_blank">'.$field['sup_name'].'</a>';
             $row[] = 'Rp. '.number_format($field['total']);
             $row[] = ($field['is_cash'] == 1) ? 'Lunas' : 'Utang';
             $row[] = $field['note'];
@@ -42,10 +42,15 @@ class Purchase extends CI_Controller {
             else {
                 $button_pay = '';
             }
+            if ($this->session->userdata('level') == 1) {
+                $button_edit_delete = '<a href="'.base_url('purchase/update/'.$field['p_id']).'" class="btn btn-success">Ubah</a>
+                            <a href="'.base_url('purchase/delete/'.$field['p_id']).'" class="btn btn-danger" onclick="return confirm(\'Yakin hapus?\')">Hapus</a>';
+            }
+            else {
+                $button_edit_delete = '';
+            }
             $row[] = '<div class="btn-group">
-                            '.$button_pay.'
-                            <a href="'.base_url('purchase/update/'.$field['p_id']).'" class="btn btn-success">Ubah</a>
-                            <a href="'.base_url('purchase/delete/'.$field['p_id']).'" class="btn btn-danger" onclick="return confirm(\'Yakin hapus?\')">Hapus</a>
+                            '.$button_pay.$button_edit_delete.'
                           </div>';
  
             $data[] = $row;
@@ -123,7 +128,6 @@ class Purchase extends CI_Controller {
         $data['row'] = $this->purchase->getDataById($id);
         $data['details'] = $this->purchase->getDataDetailByIdTrans($id);
         if ($this->input->post('submit')) {
-
             $transaction_date = $this->input->post('transaction_date');
             $supplier_id = $this->input->post('supplier_id');
             $note = $this->input->post('note');
@@ -161,7 +165,7 @@ class Purchase extends CI_Controller {
                 redirect('purchase');
             }
             else {
-                $this->session->set_flashdata('error', 'Data gagal diubah! Stok tidak cukup.');
+                $this->session->set_flashdata('error', 'Data gagal diubah! Stok sudah terpakai.');
                 redirect('purchase');   
             }
         }
@@ -178,9 +182,25 @@ class Purchase extends CI_Controller {
     //Delete one item
     public function delete( $id = NULL )
     {
-        $this->purchase->deleteData($id);
-        $this->session->set_flashdata('msg', 'Data berhasil dihapus!');
+        $result = $this->purchase->deleteData($id);
+        if ($result['msg'] == 'success') {
+            $this->session->set_flashdata('msg', 'Data berhasil dihapus!');
+            redirect('purchase');
+        }
+        else {
+            $this->session->set_flashdata('error', 'Data gagal dihapus! Stok sudah terpakai.');
+            redirect('purchase');   
+        }
         redirect('purchase');
+    }
+
+    public function detail($id = '')
+    {
+        $data['title'] = 'Detail Data Pembelian';
+        $data['page']  = 'master';
+        $data['row'] = $this->purchase->getDataById($id);
+        $data['details'] = $this->purchase->getDataDetailByIdTrans($id);
+        $this->load->view('purchases/detail',$data);
     }
 
     public function getDataProduct()
@@ -229,6 +249,29 @@ class Purchase extends CI_Controller {
             $data['methods'] = $this->method->getAllData();
             $this->load->view('purchases/pay',$data);
         }
+    }
+
+    public function getAllItems()
+    {
+        $keyword = $this->input->post('term');
+        $page = $this->input->post('page');
+        $uid = $this->input->post('uid');
+        $resultCount = 25;
+        $offset = ($page - 1) * $resultCount;
+        $endCount = $offset + $resultCount;
+
+        $items = $this->purchase->searchItems($keyword, $offset, $endCount, $uid);
+
+        $count = count($this->purchase->searchItems($keyword, $offset, $endCount, $uid));
+
+        $morePages = $endCount <= $count;
+        
+        foreach ($items as $key => $value) {
+            $dataColumn['text'] = $value['name'];
+            $dataColumn['id'] = $value['id'];
+            $data[] = $dataColumn;
+        }
+        echo json_encode(['results' => $data, 'pagination' => array('more' => $morePages)]);
     }
 }
 

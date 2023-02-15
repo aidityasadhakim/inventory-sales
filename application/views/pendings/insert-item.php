@@ -25,30 +25,54 @@
               </div>
               <form class="form-horizontal" method="post">
                 <div class="card-body">
-                  <div class="form-group row">
-                    <label for="item_id" class="col-sm-2 col-form-label">Nama Barang</label>
-                    <div class="col-sm-4">
-                      <select name="item_id" class="form-control select2" id="item_id" readonly>
-                        <option value="">--Pilih Barang--</option>
+                  <div class="table-responsive">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th width="55%">Nama Barang</th>
+                          <th width="5%">Jumlah</th>
+                          <th width="15%">Harga</th>
+                          <th width="15%">Subtotal</th>
+                          <th width="10%">#</th>
+                        </tr>
+                      </thead>
+                      <tbody>
                         <?php foreach ($items as $key => $value): ?>
-                        <option value="<?php echo $value['id'] ?>"><?php echo $value['name'] ?></option>
-                      <?php endforeach ?>
-                      </select>
-                    </div>
+                          <tr>
+                            <td><?php echo $value['name'] ?></td>
+                            <td><?php echo $value['qty'] ?></td>
+                            <td>Rp. <?php echo number_format($value['price']) ?></td>
+                            <td>Rp. <?php echo number_format($value['qty'] * $value['price']) ?>
+                              <input type="hidden" class="form-control subtotal" value="<?php echo ($value['qty'] * $value['price']) ?>">
+                            </td>
+                          </tr>
+                        <?php endforeach ?>
+                        <tr class="tr-input-field">
+                          <td>
+                            <select name="item_ids[]" class="form-control select-product item-id">
+                              
+                            </select>
+                          </td>
+                          <td>
+                            <input type="hidden" class="form-control qty-available">
+                            <input type="text" name="qty[]" class="form-control qty number" required>
+                          </td>
+                          <td><input type="text" name="price[]" class="form-control price" readonly required></td>
+                          <td><input type="text" name="subtotal[]" class="form-control subtotal" readonly required></td>
+                          <td>&nbsp;</td>
+                        </tr>
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colspan="3" class="text-right"><strong>Total Seluruh</strong></td>
+                          <td colspan="2"><input type="text" name="total" class="form-control" id="total" readonly required></td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
-                  <div class="form-group row">
-                    <label for="qty" class="col-sm-2 col-form-label">Jumlah</label>
-                    <div class="col-sm-2">
-                      <input type="text" name="qty" class="form-control number" id="qty">
-                      <input type="hidden" name="qty-available" id="qty-available">
-                    </div>
-                  </div>
-                  <div class="form-group row">
-                    <label for="price" class="col-sm-2 col-form-label">Harga</label>
-                    <div class="col-sm-3">
-                      <input type="text" name="price" class="form-control" id="price">
-                    </div>
-                  </div>
+                  <p>
+                  <button type="button" id="item-add" class="btn btn-primary">Tambah Barang</button>
+                  </p>
                 </div>
                 <div class="card-footer">
                   <button type="submit" class="btn btn-info btn-submit" name="submit" value="add">Submit Item</button>
@@ -70,8 +94,82 @@
   $(function() {
     $('.select-product').select2({
         allowClear: true,
-        width: '100%'
+        width: '100%',
+        minimumInputLength: 2,
+        placeholder: '--Pilih Barang--',
+        delay: 250,
+        ajax: {
+          url: base_url + '/pending/getAllItems',
+          dataType: "json",
+          type: "POST",
+          data: function (params) {
+
+              var  arr = $.map
+              (
+                $(".item-id option:selected"), function(n)
+                 {
+                      return n.value;
+                  }
+              );
+
+              var queryParameters = {
+                  term: params.term,  
+                  uid: arr,
+                  page: params.page || 1
+              }
+              return queryParameters;
+          },
+          cache: true
+        }
     })
+
+    $("#item-add").click(function(){
+        $('.select-product').select2('destroy');
+        var rowCount = $('table tbody tr').closest('.tr-input-field').length;
+        var tr    = $('tbody tr:last').closest('.tr-input-field');
+        var clone = tr.clone();
+        clone.find(':text').val('');
+        clone.find('select').val('');
+        tr.after(clone);
+        if (rowCount == 1) {
+            $("table tbody tr:last td:last-child").append('<a href="#" class="remove_field btn btn-danger">X</a>');
+        }
+        $('.select-product').select2({
+            allowClear: true,
+            width: '100%',
+            placeholder: '--Pilih Barang--',
+            minimumInputLength: 2,
+            delay: 250,
+            ajax: {
+              url: base_url + '/pending/getAllItems',
+              dataType: "json",
+              type: "POST",
+              data: function (params) {
+
+                  var  arr = $.map
+                  (
+                    $(".item-id option:selected"), function(n)
+                     {
+                          return n.value;
+                      }
+                  );
+
+                  var queryParameters = {
+                      term: params.term,  
+                      uid: arr,
+                      page: params.page || 1
+                  }
+                  return queryParameters;
+              },
+              cache: true
+          }
+        })
+    });
+
+    $('table tbody').on("click",".remove_field", function(e){ //user click on remove text
+        e.preventDefault(); 
+         $(this).closest('tr').remove();
+    });
 
     $(document).keydown(function(e) {
 
@@ -97,7 +195,15 @@
       if (e.shiftKey) { enterKey() } else { enterKey() }
     });
 
-    $(document).on("change", "#item_id", function(){
+    function sumGrandTotal() {
+      var sum = 0;
+      $('.subtotal').each(function(){
+          sum += parseInt($(this).val());  // Or this.innerHTML, this.innerText
+      });
+      $('#total').val(sum);
+    }
+
+    $(document).on("change", ".item-id", function(){
       var obj = this;
       var id = $(this).val();
       
@@ -109,10 +215,14 @@
       })
       .done(function(data) {
           var harga = data.price;
-          $('#price').val(harga);
-          $('#qty-available').val(data.stock);
+          $(obj).closest('tr').find('.price').val(harga);
+          $(obj).closest('tr').find('.qty-available').val(data.stock);
           var jumlah = 1;
-          $('#qty').val(jumlah);
+          var subtotal = parseInt(harga) * parseInt(jumlah);
+          $(obj).closest('tr').find('.qty').val(jumlah);
+          $(obj).closest('tr').find('.qty').focus();
+          $(obj).closest('tr').find('.subtotal').val(subtotal);
+          sumGrandTotal();
       })
       .fail(function() {
         console.log("error");
@@ -123,18 +233,21 @@
 
     });
 
-    $(document).on("keyup", "#qty", function(e){
+    $(document).on("keyup", ".qty", function(e){
       if ((e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105) || (e.keyCode >= 8 && $(this).val() != '')) {
         var obj = this;
         var qty = $(this).val();
-        var qtyAvailable = $('#qty-available').val();
-        var price = $('#price').val();
+        var qtyAvailable = $(this).closest('tr').find('.qty-available').val();
+        var price = $(obj).closest('tr').find('.price').val();
         if (parseInt(qty) > parseInt(qtyAvailable)) {
           alert('Stok Kurang');
           $('.btn-submit').prop('disabled', 'disabled');
         }
         else {
-          $('.btn-submit').removeAttr('disabled');
+          var subtotal = parseInt(price) * parseInt(qty);
+          $(obj).closest('tr').find('.subtotal').val(subtotal);
+          sumGrandTotal();
+          // validateCash();
         }
       }
     });

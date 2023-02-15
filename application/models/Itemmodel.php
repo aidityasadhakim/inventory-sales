@@ -10,8 +10,9 @@ class Itemmodel extends CI_Model {
     }
 
     var $table = 'items';
-    var $column_order = array(null, 'slug', 'code', 'name', 'stock', 'buyPrice', 'salePrice', 'note', 'type');
-    var $column_search = array('slug', 'code', 'name');
+    var $table_stock = 'stocks';
+    var $column_order = array(null, 'slug', 'code', 'name', 'stock', 'buyPrice', 'salePrice', 'salePriceNon', 'note', 'type');
+    var $column_search = array('name');
     var $order = array('name' => 'asc');
 
     
@@ -110,6 +111,39 @@ class Itemmodel extends CI_Model {
         $data = array('deleted_at' => date('Y-m-d H:i:s'));
         $this->db->where('id',$id);
         $this->db->update($this->table,$data);
+    }
+
+    public function getStocks($item_id)
+    {
+        $this->db->select('buyPrice, SUM(qty) AS qty', FALSE);
+        $this->db->where('item_id', $item_id);
+        $this->db->where('sale_id IS NULL', null, false);
+        $this->db->where('deleted_at', null);
+        $this->db->group_by('buyPrice');
+        $query = $this->db->get($this->table_stock);
+        if ($query->num_rows() > 0) {
+            return $query->result_array();
+        }
+        else {
+            return array();
+        }
+    }
+
+    
+    public function getAvailableStock($item_id='')
+    {
+        $this->db->select_sum('qty');
+        $this->db->where('deleted_at', null);
+        $this->db->where('item_id', $item_id);
+        $this->db->where('sale_id', null);
+        $query = $this->db->get($this->table_stock);
+        if ($query->num_rows() > 0) {
+            $data = $query->row_array();
+            return $data['qty'];
+        }
+        else {
+            return array();
+        }
     }
 
 }

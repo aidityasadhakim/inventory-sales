@@ -28,13 +28,13 @@
                   <div class="form-group row">
                     <label for="start_date" class="col-sm-2 col-form-label">Tanggal Awal</label>
                     <div class="col-sm-3">
-                      <input type="date" name="start_date" class="form-control" id="start_date" value="<?php echo (isset($start_date)) ? $start_date : '' ?>" required>
+                      <input type="date" name="start_date" class="form-control" id="start_date" value="<?php echo (isset($start_date)) ? $start_date : date('Y-m-d') ?>" required>
                     </div>
                   </div>
                   <div class="form-group row">
                     <label for="end_date" class="col-sm-2 col-form-label">Tanggal Akhir</label>
                     <div class="col-sm-3">
-                      <input type="date" name="end_date" class="form-control" id="end_date" value="<?php echo (isset($end_date)) ? $end_date : '' ?>" required>
+                      <input type="date" name="end_date" class="form-control" id="end_date" value="<?php echo (isset($end_date)) ? $end_date : date('Y-m-d') ?>" required>
                     </div>
                   </div>
                   <button type="submit" class="btn btn-info" name="submit" value="view">Submit</button>
@@ -58,15 +58,17 @@
                       </thead>
                       <tbody>
                         <?php 
-                        $sumCash = 0; 
-                        $sumDebt = 0; 
+                        $sumCashSale = 0; 
+                        $sumCashService = 0; 
+                        $sumDebtSale = 0; 
+                        $sumDebtService = 0; 
                         foreach ($sales as $key => $value): 
                         ?>
                           <tr>
                             <td><?php echo $key + 1; ?></td>
                             <td><?php echo date('d F Y', strtotime($value['transaction_date'])) ?></td>
                             <td><?php echo $value['code']; ?></td>
-                            <td><?php echo getDataColumn('customers', 'id', $value['customer_id'], 'name'); ?></td>
+                            <td><a href="<?php echo base_url('sale/detail/'.$value['id']) ?>" target="_blank"><?php echo $value['customer_name']; ?></a></td>
                             <td><?php echo $value['note'] ?></td>
                             <td><?php echo getDataColumn('payment_methods', 'id', $value['method_id'], 'name'); ?></td>
                             <td><?php echo ($value['is_cash'] == 1) ? 'Lunas' : 'Utang' ?></td>
@@ -75,10 +77,20 @@
                           </tr>
                         <?php 
                         if ($value['is_cash'] == 1) {
-                          $sumCash += $value['total']; 
+                          if ($value['type'] == 'sale') {
+                            $sumCashSale += $value['total']; 
+                          }
+                          else {
+                            $sumCashService += $value['total']; 
+                          }
                         }
                         else {
-                          $sumDebt += $value['total']; 
+                          if ($value['type'] == 'sale') {
+                            $sumDebtSale += $value['total']; 
+                          }
+                          else {
+                            $sumDebtService += $value['total']; 
+                          }
                         }
                         endforeach 
                         ?>
@@ -102,12 +114,28 @@
                     <table class="table table-bordered">
                       <tbody>
                         <tr>
+                          <td><strong>Total Penjualan Lunas</strong></td>
+                          <td><strong>Rp. <?php echo number_format($sumCashSale) ?></strong></td>
+                        </tr>
+                        <tr>
+                          <td><strong>Total Servis Lunas</strong></td>
+                          <td><strong>Rp. <?php echo number_format($sumCashService) ?></strong></td>
+                        </tr>
+                        <tr>
                           <td><strong>Total Pembayaran Lunas</strong></td>
-                          <td><strong>Rp. <?php echo number_format($sumCash) ?></strong></td>
+                          <td><strong>Rp. <?php echo number_format($sumCashSale + $sumCashService) ?></strong></td>
+                        </tr>
+                        <tr>
+                          <td><strong>Total Piutang Penjualan</strong></td>
+                          <td><strong>Rp. <?php echo number_format($sumDebtSale) ?></strong></td>
+                        </tr>
+                        <tr>
+                          <td><strong>Total Piutang Servis</strong></td>
+                          <td><strong>Rp. <?php echo number_format($sumDebtService) ?></strong></td>
                         </tr>
                         <tr>
                           <td><strong>Total Piutang</strong></td>
-                          <td><strong>Rp. <?php echo number_format($sumDebt) ?></strong></td>
+                          <td><strong>Rp. <?php echo number_format($sumDebtService + $sumDebtSale) ?></strong></td>
                         </tr>
                       </tbody>
                     </table>

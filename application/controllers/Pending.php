@@ -32,17 +32,17 @@ class Pending extends CI_Controller {
             $row = array();
             $row[] = $no;
             $row[] = date('d F Y', strtotime($field['transaction_date']));
-            $row[] = $field['c_name'];
+            $row[] = $field['customer_name'];
             $row[] = 'Rp. '.number_format($field['total']);
             $row[] = ($field['is_cash'] == 1) ? 'Lunas' : 'Utang';
-            $row[] = $field['m_name'];
+            $row[] = ($field['method_id'] == 0) ? 'Belum Dibayar' : getDataColumn('payment_methods', 'id', $field['method_id'], 'name');
             $row[] = $field['note'];
             $row[] = '<div class="btn-group">
-                            <a href="'.base_url('pending/item/'.$field['s_id']).'" class="btn btn-warning">Ubah Item</a>
+                            <a href="'.base_url('pending/item/'.$field['id']).'" class="btn btn-warning">Ubah Item</a>
                           </div>';
             $row[] = '<div class="btn-group">
-                            <a href="'.base_url('pending/complete/'.$field['s_id']).'" class="btn btn-success">Selesaikan</a>
-                            <a href="'.base_url('pending/delete/'.$field['s_id']).'" class="btn btn-danger" onclick="return confirm(\'Yakin Batal?\')">Batalkan</a>
+                            <a href="'.base_url('pending/complete/'.$field['id']).'" class="btn btn-success">Selesaikan</a>
+                            <a href="'.base_url('pending/delete/'.$field['id']).'" class="btn btn-danger" onclick="return confirm(\'Yakin Batal?\')">Batalkan</a>
                           </div>';
  
             $data[] = $row;
@@ -64,6 +64,8 @@ class Pending extends CI_Controller {
 
             $transaction_date = $this->input->post('transaction_date');
             $customer_id = $this->input->post('customer_id');
+            $customer_name = getDataColumn('customers', 'id', $customer_id, 'name');
+            $is_customer = 1;
             $note = $this->input->post('note');
             $method_id = $this->input->post('method_id');
 
@@ -78,7 +80,9 @@ class Pending extends CI_Controller {
 
 
             $dataInsert = array('transaction_date' => $transaction_date,
+                        'is_customer'  => $is_customer,
                         'customer_id'  => $customer_id,
+                        'customer_name'  => $customer_name,
                         'code'  => '-',
                         'total'  => $total,
                         'cash'  => $cash,
@@ -109,7 +113,7 @@ class Pending extends CI_Controller {
             $data['page']  = 'pending';
             $data['customers'] = $this->customer->getAllData();
             $data['methods'] = $this->method->getAllData();
-            $data['items'] = $this->pending->getAllItems();
+            // $data['items'] = $this->pending->getAllItems();
             $this->load->view('pendings/insert',$data);
         }
     }
@@ -123,6 +127,8 @@ class Pending extends CI_Controller {
 
             $transaction_date = $this->input->post('transaction_date');
             $customer_id = $this->input->post('customer_id');
+            $customer_name = getDataColumn('customers', 'id', $customer_id, 'name');
+            $is_customer = 1;
             $note = $this->input->post('note');
             $method_id = $this->input->post('method_id');
 
@@ -137,7 +143,9 @@ class Pending extends CI_Controller {
 
 
             $dataUpdate = array('transaction_date' => $transaction_date,
+                        'is_customer'  => $is_customer,
                         'customer_id'  => $customer_id,
+                        'customer_name'  => $customer_name,
                         'code'  => '-',
                         'total'  => $total,
                         'cash'  => $cash,
@@ -146,7 +154,7 @@ class Pending extends CI_Controller {
                         'is_cash'  => $is_cash,
                         'item_ids'  => $item_ids,
                         'price'  => $price,
-                        'status' => 2,
+                        'status' => 1,
                         'type' => 'sale',
                         'note' => $note,
                         'qty'  => $qty
@@ -167,7 +175,7 @@ class Pending extends CI_Controller {
             $data['page']  = 'master';
             $data['customers'] = $this->customer->getAllData();
             $data['methods'] = $this->method->getAllData();
-            $data['items'] = $this->sale->getAllItems();
+            // $data['items'] = $this->sale->getAllItems();
             $this->load->view('sales/update',$data);
         }
     }
@@ -184,7 +192,8 @@ class Pending extends CI_Controller {
     {
         $id = $this->input->post('id');
         $row = $this->item->getDataById($id);
-        $data = array('price' => $row['salePrice'], 'stock' => $row['stock']);
+        $stock = $this->item->getAvailableStock($id);
+        $data = array('price' => $row['salePrice'], 'stock' => $stock);
         echo json_encode($data);
     }
 
@@ -201,12 +210,12 @@ class Pending extends CI_Controller {
     {
         if ($this->input->post('submit')) {
 
-            $item_id = $this->input->post('item_id');
+            $item_ids = $this->input->post('item_ids');
             $qty = $this->input->post('qty');
             $price = $this->input->post('price');
 
             $dataInsert = array('sale_id' => $id,
-                        'item_id'  => $item_id,
+                        'item_ids'  => $item_ids,
                         'price'  => $price,
                         'qty'  => $qty
                         );            
@@ -225,7 +234,7 @@ class Pending extends CI_Controller {
             $data['title'] = 'Tambah Item Nota Penjualan Sementara';
             $data['page']  = 'pending';
             $data['id'] = $id;
-            $data['items'] = $this->pending->getAllItems();
+            $data['items'] = $this->pending->getDataDetailByIdTrans($id);
             $this->load->view('pendings/insert-item',$data);
         }
     }
@@ -259,7 +268,7 @@ class Pending extends CI_Controller {
             $data['title'] = 'Ubah Item Nota Penjualan Sementara';
             $data['page']  = 'pending';
             $data['id'] = $data['row']['sale_id'];
-            $data['items'] = $this->pending->getAllItems();
+            // $data['items'] = $this->pending->getAllItems();
             $this->load->view('pendings/update-item',$data);
         }
     }
@@ -280,6 +289,8 @@ class Pending extends CI_Controller {
 
             $transaction_date = $this->input->post('transaction_date');
             $customer_id = $this->input->post('customer_id');
+            $customer_name = getDataColumn('customers', 'id', $customer_id, 'name');
+            $is_customer = 1;
             $note = $this->input->post('note');
             $method_id = $this->input->post('method_id');
 
@@ -290,7 +301,9 @@ class Pending extends CI_Controller {
 
 
             $dataUpdate = array('transaction_date' => $transaction_date,
+                        'is_customer'  => $is_customer,
                         'customer_id'  => $customer_id,
+                        'customer_name'  => $customer_name,
                         'total'  => $total,
                         'cash'  => $cash,
                         'changes' => $changes,
@@ -310,9 +323,35 @@ class Pending extends CI_Controller {
             $data['page']  = 'master';
             $data['customers'] = $this->customer->getAllData();
             $data['methods'] = $this->method->getAllData();
-            $data['items'] = $this->pending->getAllItems();
+            // $data['items'] = $this->pending->getAllItems();
             $this->load->view('pendings/complete',$data);
         }
+    }
+
+    public function getAllItems()
+    {
+        $keyword = $this->input->post('term');
+        $page = $this->input->post('page');
+        $uid = $this->input->post('uid');
+        $resultCount = 25;
+        $offset = ($page - 1) * $resultCount;
+        $endCount = $offset + $resultCount;
+
+        $items = $this->pending->searchItems($keyword, $offset, $endCount, $uid);
+
+        $count = count($this->pending->searchItems($keyword, $offset, $endCount, $uid));
+
+        $morePages = $endCount <= $count;
+        $data = [];
+        foreach ($items as $key => $value) {
+            $stock = $this->item->getAvailableStock($value['id']);
+            if ($stock > 0) {
+                $dataColumn['text'] = $value['name'];
+                $dataColumn['id'] = $value['id'];
+                $data[] = $dataColumn;
+            }
+        }
+        echo json_encode(['results' => $data, 'pagination' => array('more' => $morePages)]);
     }
 }
 

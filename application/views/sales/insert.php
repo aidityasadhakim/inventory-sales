@@ -32,14 +32,23 @@
                     </div>
                   </div>
                   <div class="form-group row">
-                    <label for="customer_id" class="col-sm-2 col-form-label">Pelanggan</label>
+                    <div class="offset-sm-2 col-sm-10">
+                      <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="is_customer" name="is_customer" value="1">
+                        <label class="form-check-label" for="is_customer">Pelanggan</label>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label for="customer_id" class="col-sm-2 col-form-label">Nama Pelanggan</label>
                     <div class="col-sm-4">
-                      <select name="customer_id" class="form-control select2" id="customer_id" required>
+                      <select name="customer_id" class="form-control select-customer" id="customer_id" style="display: none">
                         <option value="">--Pilih Pelanggan--</option>
                         <?php foreach ($customers as $key => $value): ?>
                         <option value="<?php echo $value['id'] ?>"><?php echo $value['name'] ?></option>
                       <?php endforeach ?>
                       </select>
+                      <input type="text" name="customer_name" class="form-control" id="customer_name" required>
                     </div>
                   </div>
                   <div class="form-group row">
@@ -71,28 +80,24 @@
                     <table class="table">
                       <thead>
                         <tr>
-                          <th width="30%">Nama Barang</th>
-                          <th>Harga</th>
-                          <th>Jumlah</th>
-                          <th>Subtotal</th>
-                          <th>#</th>
+                          <th width="55%">Nama Barang</th>
+                          <th width="5%">Jumlah</th>
+                          <th width="15%">Harga</th>
+                          <th width="15%">Subtotal</th>
+                          <th width="10%">#</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr class="tr-input-field">
                           <td>
                             <select name="item_ids[]" class="form-control select-product item-id">
-                              <option value="">--Pilih Barang--</option>
-                              <?php foreach ($items as $key => $value): ?>
-                              <option value="<?php echo $value['id'] ?>"><?php echo $value['name'] ?></option>
-                              <?php endforeach ?>
                             </select>
                           </td>
-                          <td><input type="text" name="price[]" class="form-control price"<?php echo ($this->session->userdata('level') != 1) ? ' readonly' : '' ?> required></td>
                           <td>
                             <input type="hidden" class="form-control qty-available">
                             <input type="text" name="qty[]" class="form-control qty number" required>
                           </td>
+                          <td><input type="text" name="price[]" class="form-control number price"<?php echo ($this->session->userdata('level') != 1) ? ' readonly' : '' ?> required></td>
                           <td><input type="text" name="subtotal[]" class="form-control subtotal" readonly required></td>
                           <td>&nbsp;</td>
                         </tr>
@@ -119,7 +124,6 @@
                 </div>
                 <div class="card-footer">
                   <button type="submit" class="btn btn-info btn-submit" name="submit" value="add">Submit</button>
-                  <button type="button" id="tes-click">Tes</button>
                   <a href="<?php echo base_url('sale') ?>" class="btn btn-default float-right">Cancel</a>
                 </div>
               </form>
@@ -136,39 +140,92 @@
 <?php $this->load->view('layouts/footer'); ?>
 <script type="text/javascript">
   $(function() {
-
-    $("#tes-click").click(function(event) {
-      console.log($('.item-id').val());
-    });
+    var base_url = '<?php echo base_url(); ?>';
     $('.select-product').select2({
         allowClear: true,
-        width: '100%'
+        width: '100%',
+        placeholder: '--Pilih Barang--',
+        minimumInputLength: 2,
+        delay: 250,
+        ajax: {
+          url: base_url + '/sale/getAllItems',
+          dataType: "json",
+          type: "POST",
+          data: function (params) {
+
+              var  arr = $.map
+              (
+                $(".item-id option:selected"), function(n)
+                 {
+                      return n.value;
+                  }
+              );
+
+              var queryParameters = {
+                  term: params.term,  
+                  uid: arr,
+                  page: params.page || 1
+              }
+              return queryParameters;
+          },
+          cache: true
+      }
     })
+    
     $("#item-add").click(function(){
         $('.select-product').select2('destroy');
         var rowCount = $('table tbody tr').length;
         var tr    = $('tbody tr:last').closest('.tr-input-field');
         var clone = tr.clone();
         clone.find(':text').val('');
+        clone.find('select').val('');
         tr.after(clone);
         
         if (rowCount == 1) {
             $("table tbody tr:last td:last-child").append('<a href="#" class="remove_field btn btn-danger">X</a>');
         }
 
-        disabledOption();
 
         $('.select-product').select2({
             allowClear: true,
-            width: '100%'
+            width: '100%',
+            placeholder: '--Pilih Barang--',
+            minimumInputLength: 2,
+            ajax: {
+                url: base_url + '/sale/getAllItems',
+                dataType: "json",
+                type: "POST",
+                delay: 250,
+                data: function (params) {
+
+                    var  arr = $.map
+                    (
+                      $(".item-id option:selected"), function(n)
+                       {
+                            return n.value;
+                        }
+                    );
+
+                    var queryParameters = {
+                        term: params.term,  
+                        uid: arr,
+                        page: params.page || 1
+                    }
+                    return queryParameters;
+                },
+                cache: true            
+              }
         })
+        // disabledOption();
 
     });
 
     $('table tbody').on("click",".remove_field", function(e){ //user click on remove text
         e.preventDefault(); 
          $(this).closest('tr').remove();
-         disabledOption();
+         sumGrandTotal();
+         validateCash();
+         // disabledOption();
     });
 
     $(document).keydown(function(e) {
@@ -254,12 +311,19 @@
       var obj = this;
       var id = $(this).val();
 
-      disabledOption();
+      if($('#is_customer').prop('checked')) {
+        var is_customer = 1;
+      }
+      else {
+        var is_customer = 0;
+      }
+
+      // disabledOption();
 
       $.ajax({
         url: base_url + 'sale/getDataProduct',
         type: 'POST',
-        data: {'id': id},
+        data: {'id': id, 'is_customer': is_customer },
         dataType: 'json'
       })
       .done(function(data) {
@@ -347,5 +411,39 @@
       validateCash();
     });
 
+    $('#is_customer').click(function(event) {
+      if($(this).prop('checked')) {
+        $('#customer_id').show();
+        $('#customer_id').prop('required', 'required');
+        $('#customer_name').hide();
+        $('#customer_name').removeAttr('required');
+        $('.select-customer').select2({
+            allowClear: true,
+            width: '100%'
+        })
+      }
+      else {
+        $('#customer_name').show();
+        $('#customer_name').prop('required', 'required');
+        $('#customer_id').hide();
+        $('#customer_id').removeAttr('required');
+        $('.select-customer').select2('destroy');
+      }
+      resetItem();
+    });
+
+    function resetItem() {
+      $('.item-id').val('').trigger('change');
+      $('.price').val('');
+      $('.qty').val('');
+      $('.subtotal').val('');
+      $('#total').val('');
+      $('#cash').val(0);
+      $('#changes').val('');
+    }
+
+    $('form').submit(function(){
+      $('button[type=submit]', this).hide();
+    });
   });
 </script>

@@ -27,6 +27,7 @@ class Stock extends CI_Controller {
         if ($this->input->post('submit')) {
 
             $amount = $this->input->post('amount');
+            $buyPrice = $this->input->post('buyPrice');
             $note = $this->input->post('note');
 
             if ($type == 'increase') {
@@ -34,11 +35,11 @@ class Stock extends CI_Controller {
                         'transaction_id' => 0,
                         'item_id'  => $item_id,
                         'amount'  => $amount,
+                        'buyPrice'  => $buyPrice,
                         'type' => 'stock',
                         'note'  => $note
                         );
-                increaseStock($item_id, $amount);
-                $this->stock->insertData($dataInsert);
+                $this->stock->addStock($dataInsert);
                 $this->session->set_flashdata('msg', 'Stok berhasil ditambah!');
                 redirect('stock/index/'.$item_id);
             }
@@ -46,17 +47,17 @@ class Stock extends CI_Controller {
                 $dataInsert = array(
                         'transaction_id' => 0,
                         'item_id'  => $item_id,
-                        'amount'  => '-'.$amount,
+                        'amount'  => $amount,
+                        'buyPrice'  => $buyPrice,
                         'type' => 'stock',
                         'note'  => $note
                         );
-                $affected = decreaseStock($item_id, $amount);
-                if ($affected == 0) {
+                $result = $this->stock->decreaseStock($dataInsert);
+                if ($result['msg'] == 'fail') {
                     $this->session->set_flashdata('error', 'Stok gagal dikurangkan!');
                     redirect('stock/add/decrease/'.$item_id);
                 }
                 else {
-                    $this->stock->insertData($dataInsert);
                     $this->session->set_flashdata('msg', 'Stok berhasil dikurangkan!');
                     redirect('stock/index/'.$item_id);
                 }
@@ -74,6 +75,7 @@ class Stock extends CI_Controller {
             $data['page']  = 'master';
             $data['type'] = $type;
             $data['item_id'] = $item_id;
+            $data['prices'] = $this->stock->getPrices($data['item_id']);
             $this->load->view('stocks/insert',$data);
         }
     }

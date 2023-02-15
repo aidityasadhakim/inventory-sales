@@ -71,28 +71,25 @@
                     <table class="table">
                       <thead>
                         <tr>
-                          <th width="30%">Nama Barang</th>
-                          <th>Harga</th>
-                          <th>Jumlah</th>
-                          <th>Subtotal</th>
-                          <th>#</th>
+                          <th width="55%">Nama Barang</th>
+                          <th width="5%">Jumlah</th>
+                          <th width="15%">Harga</th>
+                          <th width="15%">Subtotal</th>
+                          <th width="10%">#</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr class="tr-input-field">
                           <td>
                             <select name="item_ids[]" class="form-control select-product item-id">
-                              <option value="">--Pilih Barang--</option>
-                              <?php foreach ($items as $key => $value): ?>
-                              <option value="<?php echo $value['id'] ?>"><?php echo $value['name'] ?></option>
-                              <?php endforeach ?>
+                              
                             </select>
                           </td>
-                          <td><input type="text" name="price[]" class="form-control price" readonly required></td>
                           <td>
                             <input type="hidden" class="form-control qty-available">
                             <input type="text" name="qty[]" class="form-control qty number" required>
                           </td>
+                          <td><input type="text" name="price[]" class="form-control price" readonly required></td>
                           <td><input type="text" name="subtotal[]" class="form-control subtotal" readonly required></td>
                           <td>&nbsp;</td>
                         </tr>
@@ -129,7 +126,33 @@
   $(function() {
     $('.select-product').select2({
         allowClear: true,
-        width: '100%'
+        width: '100%',
+        minimumInputLength: 2,
+        placeholder: '--Pilih Barang--',
+        delay: 250,
+        ajax: {
+          url: base_url + '/pending/getAllItems',
+          dataType: "json",
+          type: "POST",
+          data: function (params) {
+
+              var  arr = $.map
+              (
+                $(".item-id option:selected"), function(n)
+                 {
+                      return n.value;
+                  }
+              );
+
+              var queryParameters = {
+                  term: params.term,  
+                  uid: arr,
+                  page: params.page || 1
+              }
+              return queryParameters;
+          },
+          cache: true
+      }
     })
     $("#item-add").click(function(){
         $('.select-product').select2('destroy');
@@ -137,13 +160,40 @@
         var tr    = $('tbody tr:last').closest('.tr-input-field');
         var clone = tr.clone();
         clone.find(':text').val('');
+        clone.find('select').val('');
         tr.after(clone);
         if (rowCount == 1) {
             $("table tbody tr:last td:last-child").append('<a href="#" class="remove_field btn btn-danger">X</a>');
         }
         $('.select-product').select2({
             allowClear: true,
-            width: '100%'
+            width: '100%',
+            placeholder: '--Pilih Barang--',
+            minimumInputLength: 2,
+            delay: 250,
+            ajax: {
+              url: base_url + '/pending/getAllItems',
+              dataType: "json",
+              type: "POST",
+              data: function (params) {
+
+                  var  arr = $.map
+                  (
+                    $(".item-id option:selected"), function(n)
+                     {
+                          return n.value;
+                      }
+                  );
+
+                  var queryParameters = {
+                      term: params.term,  
+                      uid: arr,
+                      page: params.page || 1
+                  }
+                  return queryParameters;
+              },
+              cache: true
+          }
         })
     });
 

@@ -30,6 +30,12 @@
                       <?php echo $this->session->flashdata('msg'); ?>
                   </div>
                 <?php endif; ?>
+                <?php if($this->session->flashdata('error')): ?>
+                  <div class="alert alert-danger">
+                      <button type="button" class="close" data-dismiss="alert">X</button>
+                      <?php echo $this->session->flashdata('error'); ?>
+                  </div>
+                <?php endif; ?>
                 <p>
                   <a href="<?php echo base_url('retur/add') ?>" class="btn btn-primary">Tambah</a>
                 </p>
@@ -40,6 +46,9 @@
                         <th>No</th>
                         <th>Tanggal</th>
                         <th>Kode Penjualan</th>
+                        <th>Nama Pelanggan</th>
+                        <th>Nama Barang</th>
+                        <th>Jumlah Retur</th>
                         <th>Keterangan</th>
                         <th>#</th>
                       </tr>
@@ -50,10 +59,19 @@
                           <td><?php echo $key+1 ?></td>
                           <td><?php echo date('d F Y', strtotime($value['transaction_date'])) ?></td>
                           <td><?php echo $value['s_code'] ?></td>
+                          <td><?php echo $value['s_customer_name'] ?></td>
+                          <td><?php echo $value['i_name'] ?></td>
+                          <td><?php echo $value['qty'] ?></td>
                           <td><?php echo $value['note'] ?></td>
                           <td>
                             <div class="btn-group">
-                              <a href="<?php echo base_url('retur/detail/'.$value['id']); ?>" class="btn btn-default">Detail</a>
+                              <a href="<?php echo base_url('retur/cetak/'.$value['id']); ?>" class="btn btn-default">Cetak</a>
+                              <?php if ($value['is_stock'] == 0): ?>
+                              <a href="<?php echo base_url('retur/stock/'.$value['id']); ?>" class="btn btn-success" onclick="return confirm('Yakin Kembalikan Stok?');">Kembalikan Stok</a>
+                              <?php endif ?>
+                              <?php if ($this->session->userdata('level') == 1): ?>
+                              <a href="<?php echo base_url('retur/delete/'.$value['id']); ?>" class="btn btn-danger" onclick="return confirm('Yakin Hapus?');">Hapus</a>
+                              <?php endif ?>
                             </div>
                           </td>
                         </tr>

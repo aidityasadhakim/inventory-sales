@@ -32,6 +32,7 @@
                 <?php endif; ?>
                 <p>
                   <a href="<?php echo base_url('item/add') ?>" class="btn btn-primary">Tambah</a>
+                  <button type="button" class="btn btn-warning float-right" id="clearState"><span class="fa fa-refresh"></span> Refresh Data</button>
                 </p>
                 <div class="table-responsive">
                   <table class="table table-bordered" id="data-table-item">
@@ -40,7 +41,11 @@
                         <th>No</th>
                         <th>Nama Barang</th>
                         <th>Stok</th>
-                        <th>Harga</th>
+                        <?php if ($this->session->userdata('level') == 1): ?>
+                        <th>Harga Beli</th>
+                        <?php endif ?>
+                        <th>Harga Jual Teknisi</th>
+                        <th>Harga Jual User</th>
                         <th class="filter">Kategori</th>
                         <th>Keterangan</th>
                         <th>#</th>
@@ -53,6 +58,10 @@
                       <tr>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <?php if ($this->session->userdata('level') == 1): ?>
+                        <td>&nbsp;</td>
+                        <?php endif ?>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td class="filter">Kategori</td>

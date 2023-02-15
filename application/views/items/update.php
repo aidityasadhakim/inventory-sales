@@ -31,7 +31,7 @@
                       <input type="text" name="name" class="form-control" id="name" required value="<?php echo $row['name'] ?>">
                     </div>
                   </div>
-                  <div class="form-group row">
+                  <div class="form-group row"<?php echo ($this->session->userdata('level') == 2 || $this->session->userdata('level') == 3) ? ' style="display:none"' : ''; ?>>
                     <label for="buyPrice" class="col-sm-2 col-form-label">Harga Beli</label>
                     <div class="col-sm-3">
                       <div class="input-group mb-2">
@@ -49,7 +49,18 @@
                         <div class="input-group-prepend">
                           <div class="input-group-text">Rp. </div>
                         </div>
-                        <input type="text" name="salePrice" class="form-control number" id="salePrice" required value="<?php echo $row['salePrice'] ?>">
+                        <input type="text" name="salePrice" class="form-control number" id="salePrice" required value="<?php echo $row['salePrice'] ?>"<?php echo ($this->session->userdata('level') == 3) ? ' readonly' : ''; ?>>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label for="salePriceNon" class="col-sm-2 col-form-label">Harga Jual Non Pelanggan</label>
+                    <div class="col-sm-3">
+                      <div class="input-group mb-2">
+                        <div class="input-group-prepend">
+                          <div class="input-group-text">Rp. </div>
+                        </div>
+                        <input type="number" name="salePriceNon" class="form-control number" id="salePriceNon" required value="<?php echo $row['salePriceNon'] ?>" min="<?php echo $row['salePrice'] ?>">
                       </div>
                     </div>
                   </div>
@@ -63,9 +74,10 @@
                     <label for="type" class="col-sm-2 col-form-label">Kategori</label>
                     <div class="col-sm-3">
                       <select name="type" class="form-control" id="type">
-                        <option value="accessories"<?php echo ($row['type'] == 'accessories') ? ' selected' : '' ?>>Accessories</option>
-                        <option value="part"<?php echo ($row['type'] == 'part') ? ' selected' : '' ?>>Part</option>
-                        <option value="unit"<?php echo ($row['type'] == 'unit') ? ' selected' : '' ?>>Unit</option>
+                        <option value="Accessories"<?php echo ($row['type'] == 'Accessories') ? ' selected' : '' ?>>Accessories</option>
+                        <option value="Part"<?php echo ($row['type'] == 'Part') ? ' selected' : '' ?>>Part</option>
+                        <option value="Unit"<?php echo ($row['type'] == 'Unit') ? ' selected' : '' ?>>Unit</option>
+                        <option value="Tools"<?php echo ($row['type'] == 'Tools') ? ' selected' : '' ?>>Tools</option>
                       </select>
                     </div>
                   </div>

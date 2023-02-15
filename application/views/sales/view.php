@@ -48,6 +48,7 @@
                         <th>Nama Pelanggan</th>
                         <th>Total Harga</th>
                         <th>Status Bayar</th>
+                        <th class="filter">Metode Pembayaran</th>
                         <th>Keterangan</th>
                         <th>#</th>
                       </tr>
@@ -62,6 +63,7 @@
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
+                        <td class="filter">&nbsp;</td>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                       </tr>

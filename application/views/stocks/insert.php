@@ -37,6 +37,25 @@
                       <input type="text" name="amount" class="form-control" id="amount" required>
                     </div>
                   </div>
+                  <?php if ($type == 'increase'): ?>
+                  <div class="form-group row">
+                    <label for="buyPrice" class="col-sm-2 col-form-label">Harga Beli</label>
+                    <div class="col-sm-4">
+                      <input type="text" name="buyPrice" class="form-control number" id="buyPrice" required>
+                    </div>
+                  </div>
+                  <?php else: ?>
+                  <div class="form-group row">
+                    <label for="buyPrice" class="col-sm-2 col-form-label">Harga Beli</label>
+                    <div class="col-sm-4">
+                      <select name="buyPrice" class="form-control" id="buyPrice" required>
+                        <?php foreach ($prices as $key => $value): ?>
+                          <option><?php echo $value['buyPrice']; ?></option>
+                        <?php endforeach ?>
+                      </select>
+                    </div>
+                  </div>
+                  <?php endif ?>
                   <div class="form-group row">
                     <label for="note" class="col-sm-2 col-form-label">Keterangan</label>
                     <div class="col-sm-5">

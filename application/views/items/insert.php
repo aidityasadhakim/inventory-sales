@@ -54,6 +54,17 @@
                     </div>
                   </div>
                   <div class="form-group row">
+                    <label for="salePriceNon" class="col-sm-2 col-form-label">Harga Jual Non Pelanggan</label>
+                    <div class="col-sm-3">
+                      <div class="input-group mb-2">
+                        <div class="input-group-prepend">
+                          <div class="input-group-text">Rp. </div>
+                        </div>
+                        <input type="text" name="salePriceNon" class="form-control number" id="salePriceNon" required>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-group row">
                     <label for="stockMin" class="col-sm-2 col-form-label">Stok Minimal</label>
                     <div class="col-sm-2">
                       <input type="text" name="stockMin" class="form-control number" id="stockMin" required>
@@ -63,9 +74,10 @@
                     <label for="type" class="col-sm-2 col-form-label">Kategori</label>
                     <div class="col-sm-3">
                       <select name="type" class="form-control" id="type">
-                        <option value="accessories">Accessories</option>
-                        <option value="part">Part</option>
-                        <option value="unit">Unit</option>
+                        <option value="Accessories">Accessories</option>
+                        <option value="Part">Part</option>
+                        <option value="Unit">Unit</option>
+                        <option value="Tools">Tools</option>
                       </select>
                     </div>
                   </div>

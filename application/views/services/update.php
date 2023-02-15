@@ -32,20 +32,33 @@
                     </div>
                   </div>
                   <div class="form-group row">
-                    <label for="customer_id" class="col-sm-2 col-form-label">Pelanggan</label>
+                    <label for="customer_id" class="col-sm-2 col-form-label">Nama Pelanggan</label>
                     <div class="col-sm-4">
+                      <input type="hidden" name="is_customer" value="<?php echo $row['is_customer'] ?>" id="is_customer">
+                      <?php if ($row['is_customer'] == 1): ?>
                       <select name="customer_id" class="form-control select2" id="customer_id" required>
                         <option value="">--Pilih Pelanggan--</option>
                         <?php foreach ($customers as $key => $value): ?>
                         <option value="<?php echo $value['id'] ?>"<?php echo ($value['id'] == $row['customer_id']) ? ' selected' : '' ?>><?php echo $value['name'] ?></option>
                       <?php endforeach ?>
                       </select>
+                      <?php else: ?>
+                        <input type="text" name="customer_name" class="form-control" id="customer_name" value="<?php echo $row['customer_name'] ?>" required>
+                      <?php endif ?>
                     </div>
                   </div>
                   <div class="form-group row">
                     <label for="note" class="col-sm-2 col-form-label">Keterangan</label>
                     <div class="col-sm-5">
                       <input type="text" name="note" class="form-control" id="note" value="<?php echo $row['note'] ?>">
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <div class="offset-sm-2 col-sm-10">
+                      <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="type_service" name="type_service" value="software"<?php echo ($row['type_service'] == 'software') ? ' checked' : '' ?>>
+                        <label class="form-check-label" for="type_service">Servis Software</label>
+                      </div>
                     </div>
                   </div>
                   <div class="form-group row">
@@ -71,7 +84,7 @@
                     <table class="table">
                       <thead>
                         <tr>
-                          <th>Nama Barang</th>
+                          <th width="80%">Nama Barang</th>
                           <th>Jumlah</th>
                           <th>#</th>
                         </tr>
@@ -81,15 +94,13 @@
                         <tr class="tr-input-field">
                           <td>
                             <select name="item_ids[]" class="form-control select-product item-id">
-                              <option value="">--Pilih Barang--</option>
-                              <?php foreach ($items as $keyItem => $valueItem): ?>
-                              <option value="<?php echo $value['id'] ?>"<?php echo ($valueItem['id'] == $value['item_id']) ? ' selected' : '' ?>><?php echo $valueItem['name'] ?></option>
-                              <?php endforeach ?>
+                              <option value="<?php echo $value['item_id'] ?>" selected><?php echo $value['name'] ?></option>
                             </select>
                           </td>
                           <td>
                             <input type="hidden" class="form-control qty-available" value="<?php echo $value['stock'] + $value['qty'] ?>">
                             <input type="text" name="qty[]" class="form-control qty number" required value="<?php echo $value['qty'] ?>">
+                            <input type="hidden" name="price[]" class="form-control price" value="<?php echo $value['price'] ?>">
                           </td>
                           <td>
                             <?php if ($key > 0): ?>
@@ -141,7 +152,33 @@
   $(function() {
     $('.select-product').select2({
         allowClear: true,
-        width: '100%'
+        width: '100%',
+        minimumInputLength: 2,
+        placeholder: '--Pilih Barang--',
+        delay: 250,
+        ajax: {
+          url: base_url + '/service/getAllItems',
+          dataType: "json",
+          type: "POST",
+          data: function (params) {
+
+              var  arr = $.map
+              (
+                $(".item-id option:selected"), function(n)
+                 {
+                      return n.value;
+                  }
+              );
+
+              var queryParameters = {
+                  term: params.term,  
+                  uid: arr,
+                  page: params.page || 1
+              }
+              return queryParameters;
+          },
+          cache: true
+        }
     })
     $("#item-add").click(function(){
         $('.select-product').select2('destroy');
@@ -155,7 +192,33 @@
         }
         $('.select-product').select2({
             allowClear: true,
-            width: '100%'
+            width: '100%',
+            minimumInputLength: 2,
+            placeholder: '--Pilih Barang--',
+            delay: 250,
+            ajax: {
+              url: base_url + '/service/getAllItems',
+              dataType: "json",
+              type: "POST",
+              data: function (params) {
+
+                  var  arr = $.map
+                  (
+                    $(".item-id option:selected"), function(n)
+                     {
+                          return n.value;
+                      }
+                  );
+
+                  var queryParameters = {
+                      term: params.term,  
+                      uid: arr,
+                      page: params.page || 1
+                  }
+                  return queryParameters;
+              },
+              cache: true
+            }
         })
     });
 
@@ -210,11 +273,12 @@
     $(document).on("change", ".item-id", function(){
       var obj = this;
       var id = $(this).val();
+      var is_customer = $('#is_customer').val();
       
       $.ajax({
-        url: base_url + 'sale/getDataProduct',
+        url: base_url + 'service/getDataProduct',
         type: 'POST',
-        data: {'id': id},
+        data: {'id': id, 'is_customer': is_customer },
         dataType: 'json'
       })
       .done(function(data) {
@@ -222,6 +286,7 @@
           var jumlah = 1;
           $(obj).closest('tr').find('.qty').val(jumlah);
           $(obj).closest('tr').find('.qty').focus();
+          $(obj).closest('tr').find('.price').val(data.price);
           validateCash();
       })
       .fail(function() {

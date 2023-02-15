@@ -1,0 +1,1 @@
+UPDATE items i INNER JOIN ( SELECT item_id, SUM(qty) as total FROM stocks WHERE sale_id IS NULL GROUP BY item_id ) x ON i.id = x.item_id SET i.stock = x.total

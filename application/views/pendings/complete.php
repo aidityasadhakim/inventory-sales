@@ -71,9 +71,9 @@
                     <table class="table">
                       <thead>
                         <tr>
-                          <th width="30%">Nama Barang</th>
-                          <th>Harga</th>
+                          <th width="60%">Nama Barang</th>
                           <th>Jumlah</th>
+                          <th>Harga</th>
                           <th>Subtotal</th>
                         </tr>
                       </thead>
@@ -88,10 +88,10 @@
                           <td>
                             <input type="text" name="item_ids[]" class="form-control item-id" readonly required value="<?php echo $value['name'] ?>">
                           </td>
-                          <td><input type="text" name="price[]" class="form-control price" readonly required value="<?php echo $value['price'] ?>"></td>
                           <td>
                             <input type="text" name="qty[]" class="form-control qty number" readonly required value="<?php echo $value['qty'] ?>">
                           </td>
+                          <td><input type="text" name="price[]" class="form-control price" readonly required value="<?php echo $value['price'] ?>"></td>
                           <td><input type="text" name="subtotal[]" class="form-control subtotal" readonly required value="<?php echo $value['price']*$value['qty'] ?>"></td>
                         </tr>
                         <?php $total += $subtotal; endforeach ?>

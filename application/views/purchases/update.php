@@ -71,11 +71,11 @@
                     <table class="table">
                       <thead>
                         <tr>
-                          <th width="30%">Nama Barang</th>
-                          <th>Harga</th>
-                          <th>Jumlah</th>
-                          <th>Subtotal</th>
-                          <th>#</th>
+                          <th width="55%">Nama Barang</th>
+                          <th width="5%">Jumlah</th>
+                          <th width="15%">Harga</th>
+                          <th width="15%">Subtotal</th>
+                          <th width="10%">#</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -83,16 +83,13 @@
                         <tr class="tr-input-field">
                           <td>
                             <select name="item_ids[]" class="form-control select-product item-id">
-                              <option value="">--Pilih Barang--</option>
-                              <?php foreach ($items as $keyItem => $valueItem): ?>
-                              <option value="<?php echo $value['id'] ?>"<?php echo ($valueItem['id'] == $value['item_id']) ? ' selected' : '' ?>><?php echo $valueItem['name'] ?></option>
-                              <?php endforeach ?>
+                              <option value="<?php echo $value['item_id'] ?>" selected><?php echo $value['name'] ?></option>
                             </select>
                           </td>
-                          <td><input type="text" name="price[]" class="form-control price" required value="<?php echo $value['price'] ?>"></td>
                           <td>
                             <input type="text" name="qty[]" class="form-control qty number" required value="<?php echo $value['qty'] ?>">
                           </td>
+                          <td><input type="text" name="price[]" class="form-control number price" required value="<?php echo $value['price'] ?>"></td>
                           <td><input type="text" name="subtotal[]" class="form-control subtotal" readonly required value="<?php echo $value['price']*$value['qty'] ?>"></td>
                           <td>
                             <?php if ($key > 0): ?>
@@ -142,9 +139,38 @@
 <?php $this->load->view('layouts/footer'); ?>
 <script type="text/javascript">
   $(function() {
+    
+    disabledOption();
+
     $('.select-product').select2({
         allowClear: true,
-        width: '100%'
+        width: '100%',
+        minimumInputLength: 2,
+        placeholder: '--Pilih Barang--',
+        delay: 250,
+        ajax: {
+          url: base_url + '/purchase/getAllItems',
+          dataType: "json",
+          type: "POST",
+          data: function (params) {
+
+              var  arr = $.map
+              (
+                $(".item-id option:selected"), function(n)
+                 {
+                      return n.value;
+                  }
+              );
+
+              var queryParameters = {
+                  term: params.term,  
+                  uid: arr,
+                  page: params.page || 1
+              }
+              return queryParameters;
+          },
+          cache: true
+        }
     })
     $("#item-add").click(function(){
         $('.select-product').select2('destroy');
@@ -152,19 +178,52 @@
         var tr    = $('tbody tr:last').closest('.tr-input-field');
         var clone = tr.clone();
         clone.find(':text').val('');
+        clone.find('select').val('');
         tr.after(clone);
         if (rowCount == 1) {
             $("table tbody tr:last td:last-child").append('<a href="#" class="remove_field btn btn-danger">X</a>');
         }
+
+        disabledOption();
+
         $('.select-product').select2({
             allowClear: true,
-            width: '100%'
+            width: '100%',
+            placeholder: '--Pilih Barang--',
+            minimumInputLength: 2,
+            delay: 250,
+            ajax: {
+              url: base_url + '/purchase/getAllItems',
+              dataType: "json",
+              type: "POST",
+              data: function (params) {
+
+                  var  arr = $.map
+                  (
+                    $(".item-id option:selected"), function(n)
+                     {
+                          return n.value;
+                      }
+                  );
+
+                  var queryParameters = {
+                      term: params.term,  
+                      uid: arr,
+                      page: params.page || 1
+                  }
+                  return queryParameters;
+              },
+              cache: true
+          }
         })
     });
 
     $('table tbody').on("click",".remove_field", function(e){ //user click on remove text
         e.preventDefault(); 
          $(this).closest('tr').remove();
+         sumGrandTotal();
+         validateCash();
+         disabledOption();
     });
 
     $(document).keydown(function(e) {
@@ -199,6 +258,29 @@
       $('#total').val(sum);
     }
 
+    function disabledOption() {
+      var rowCount = $('table tbody tr').length;
+        if (rowCount > 0) {
+          $(".item-id option").removeAttr('disabled');
+          var  arr = $.map
+          (
+            $(".item-id option:selected"), function(n)
+             {
+                  return n.value;
+              }
+          );
+          $('.item-id option').filter(function()
+          {
+              return $.inArray($(this).val(),arr)>-1;
+
+          }).attr("disabled","disabled");
+        }
+
+        $(".item-id").each(function(index, listItem){
+          $(this).find("option[value='" + $(this).find('option[disabled]:selected').val() + "']").removeAttr('disabled');
+        });  
+    }
+
     function validateCash() {
       if($('#is_cash').prop('checked')) {
         $('.btn-submit').removeAttr('disabled');
@@ -221,6 +303,8 @@
     $(document).on("change", ".item-id", function(){
       var obj = this;
       var id = $(this).val();
+
+      disabledOption();
       
       $.ajax({
         url: base_url + 'purchase/getDataProduct',

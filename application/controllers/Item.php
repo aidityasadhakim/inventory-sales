@@ -29,27 +29,37 @@ class Item extends CI_Controller {
             $row = array();
             $row[] = $no;
             $row[] = $field->name;
-            $row[] = $field->stock;
-            if ($this->session->userdata('level') == 1 || $this->session->userdata('level') == 2) {    
-            $row[] = '<strong>Harga Jual: </strong> Rp. '.number_format($field->salePrice).'<br><strong>Harga Beli: </strong> Rp. '.number_format($field->buyPrice);
+            $row[] = getStockAvailable($field->id);
+
+            // $percentage = getDataColumn('percentages', 'label', 'harga-umum', 'amount');
+            // $price_general = $field->salePrice + (($field->salePrice*$percentage)/100);
+            $price_general = $field->salePriceNon;
+            if ($this->session->userdata('level') == 1) {    
+                $highBuyPrice = getLatestPrice($field->id);
+                $row[] = '<a href="'.base_url('item/stock/'.$field->id).'">Rp. '.number_format($highBuyPrice).'</a>';
             }
-            else {
-                $row[] = '<strong>Harga Jual: </strong> Rp. '.number_format($field->salePrice);
-            }
+            $row[] = 'Rp. '.number_format($field->salePrice);
+            $row[] = 'Rp. '.number_format($price_general);
             $row[] = ucfirst($field->type);
             $row[] = $field->note;
             if ($this->session->userdata('level') == 1) {
                 $button_stock = '<a href="'.base_url('stock/index/'.$field->id).'" class="btn btn-warning">Stok</a>';
+                $button_edit_delete = '<a href="'.base_url('item/update/'.$field->id).'" class="btn btn-success">Ubah</a>
+                            <a href="'.base_url('item/delete/'.$field->id).'" class="btn btn-danger" onclick="return confirm(\'Yakin hapus?\')">Hapus</a>';
+            }
+            elseif ($this->session->userdata('level') == 2) {
+                $button_stock = '';
+                $button_edit_delete = '<a href="'.base_url('item/update/'.$field->id).'" class="btn btn-success">Ubah</a>';
             }
             else {
                 $button_stock = '';
+                $button_edit_delete = '<a href="'.base_url('item/update/'.$field->id).'" class="btn btn-success">Ubah</a>';
             }
             $row[] = '<div class="btn-group">
                             '.$button_stock.'                            
-                            <a href="'.base_url('item/update/'.$field->id).'" class="btn btn-success">Ubah</a>
-                            <a href="'.base_url('item/delete/'.$field->id).'" class="btn btn-danger" onclick="return confirm(\'Yakin hapus?\')">Hapus</a>
+                            '.$button_edit_delete.'                            
                           </div>';
- 
+            
             $data[] = $row;
         }
  
@@ -70,6 +80,7 @@ class Item extends CI_Controller {
             $name = $this->input->post('name');
             $slug = str_replace(' ', '', strtolower($name));
             $salePrice = $this->input->post('salePrice');
+            $salePriceNon = $this->input->post('salePriceNon');
             $buyPrice = $this->input->post('buyPrice');
             $stockMin = $this->input->post('stockMin');
             $type = $this->input->post('type');
@@ -83,6 +94,7 @@ class Item extends CI_Controller {
                         'stockMin'  => $stockMin,
                         'buyPrice' => $buyPrice,
                         'salePrice' => $salePrice,
+                        'salePriceNon' => $salePriceNon,
                         'type'  => $type,
                         'note'  => $note
                         );            
@@ -108,6 +120,7 @@ class Item extends CI_Controller {
             $name = $this->input->post('name');
             $slug = str_replace(' ', '', strtolower($name));
             $salePrice = $this->input->post('salePrice');
+            $salePriceNon = $this->input->post('salePriceNon');
             $buyPrice = $this->input->post('buyPrice');
             $stockMin = $this->input->post('stockMin');
             $type = $this->input->post('type');
@@ -119,6 +132,7 @@ class Item extends CI_Controller {
                         'stockMin'  => $stockMin,
                         'buyPrice' => $buyPrice,
                         'salePrice' => $salePrice,
+                        'salePriceNon' => $salePriceNon,
                         'type'  => $type,
                         'note'  => $note
                         );   
@@ -141,6 +155,15 @@ class Item extends CI_Controller {
         $this->item->deleteData($id);
         $this->session->set_flashdata('msg', 'Data berhasil dihapus!');
         redirect('item');
+    }
+
+    public function stock($item_id)
+    {
+        $data['title'] = 'Stok Barang';
+        $data['page']  = 'master';
+        $data['row'] = $this->item->getDataById($item_id);
+        $data['stocks'] = $this->item->getStocks($item_id);
+        $this->load->view('items/stock', $data);
     }
 }
 

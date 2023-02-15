@@ -49,7 +49,7 @@
                         <th>Tanggal</th>
                         <th>Jumlah</th>
                         <th>Keterangan</th>
-                        <th>#</th>
+                        <!-- <th>#</th> -->
                       </tr>
                     </thead>
                     <tbody>
@@ -59,11 +59,11 @@
                           <td><?php echo date('d F Y', strtotime($value['created_at'])) ?></td>
                           <td><?php echo $value['amount'] ?></td>
                           <td><?php echo $value['note'] ?></td>
-                          <td>
+                          <!-- <td>
                             <div class="btn-group">
                               <a href="<?php echo base_url('stock/delete/'.$value['id']); ?>" class="btn btn-danger" onclick="return confirm('Yakin hapus?')">Hapus</a>
                             </div>
-                          </td>
+                          </td> -->
                         </tr>
                       <?php endforeach ?>
                     </tbody>

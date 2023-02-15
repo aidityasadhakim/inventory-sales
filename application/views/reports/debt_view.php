@@ -28,13 +28,13 @@
                   <div class="form-group row">
                     <label for="start_date" class="col-sm-2 col-form-label">Tanggal Awal</label>
                     <div class="col-sm-3">
-                      <input type="date" name="start_date" class="form-control" id="start_date" value="<?php echo (isset($start_date)) ? $start_date : '' ?>" required>
+                      <input type="date" name="start_date" class="form-control" id="start_date" value="<?php echo (isset($start_date)) ? $start_date : date('Y-m-d') ?>" required>
                     </div>
                   </div>
                   <div class="form-group row">
                     <label for="end_date" class="col-sm-2 col-form-label">Tanggal Akhir</label>
                     <div class="col-sm-3">
-                      <input type="date" name="end_date" class="form-control" id="end_date" value="<?php echo (isset($end_date)) ? $end_date : '' ?>" required>
+                      <input type="date" name="end_date" class="form-control" id="end_date" value="<?php echo (isset($end_date)) ? $end_date : date('Y-m-d') ?>" required>
                     </div>
                   </div>
                   <button type="submit" class="btn btn-info" name="submit" value="view">Submit</button>
@@ -60,12 +60,12 @@
                             <td><?php echo $key + 1; ?></td>
                             <td><?php echo date('d F Y', strtotime($value['transaction_date'])) ?></td>
                             <td><?php echo $value['code']; ?></td>
-                            <td><?php echo getDataColumn('suppliers', 'id', $value['supplier_id'], 'name'); ?></td>
+                            <td><a href="<?php echo base_url('purchase/detail/'.$value['id']) ?>" target="_blank"><?php echo getDataColumn('suppliers', 'id', $value['supplier_id'], 'name'); ?></a></td>
                             <td><?php echo $value['note'] ?></td>
                             <td><?php echo ($value['is_cash'] == 1) ? 'Lunas' : 'Utang' ?></td>
                             <td>Rp. <?php echo number_format($value['total']) ?></td>
                           </tr>
-                        <?php $sumSale += $value['total']; endforeach ?>
+                        <?php $sumDebt += $value['total']; endforeach ?>
                       </tbody>
                       <tfoot>
                         <tr>

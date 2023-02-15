@@ -12,6 +12,7 @@ class Sale extends CI_Controller {
         $this->load->model('Customermodel', 'customer');
         $this->load->model('PaymentMethodmodel', 'method');
         $this->load->model('Itemmodel', 'item');
+        $this->load->model('Papermodel', 'paper');
     }
 
     // List all your items
@@ -32,20 +33,22 @@ class Sale extends CI_Controller {
             $row = array();
             $row[] = $no;
             $row[] = date('d F Y', strtotime($field['transaction_date']));
-            $row[] = $field['c_name'];
+            $row[] = '<a href="'.base_url('sale/detail/'.$field['id']).'" target="_blank">'.$field['customer_name'].'</a>';
             $row[] = 'Rp. '.number_format($field['total']);
             $row[] = ($field['is_cash'] == 1) ? 'Lunas' : 'Utang';
+            $row[] = getDataColumn('payment_methods', 'id', $field['method_id'], 'name');
             $row[] = $field['note'];
             if ($field['is_cash'] == 0) {
-                $button_pay = '<a href="'.base_url('sale/pay/'.$field['s_id']).'" class="btn btn-warning">Bayar</a>';
+                $button_pay = '<a href="'.base_url('sale/pay/'.$field['id']).'" class="btn btn-warning">Bayar</a>';
             }
             else {
                 $button_pay = '';
             }
             $row[] = '<div class="btn-group">
                             '.$button_pay.'
-                            <a href="'.base_url('sale/update/'.$field['s_id']).'" class="btn btn-success">Ubah</a>
-                            <a href="'.base_url('sale/delete/'.$field['s_id']).'" class="btn btn-danger" onclick="return confirm(\'Yakin hapus?\')">Hapus</a>
+                            <a href="'.base_url('sale/cetak/'.$field['id']).'" class="btn btn-default">Cetak</a>
+                            <a href="'.base_url('sale/update/'.$field['id']).'" class="btn btn-success">Ubah</a>
+                            <a href="'.base_url('sale/delete/'.$field['id']).'" class="btn btn-danger" onclick="return confirm(\'Yakin hapus?\')">Hapus</a>
                           </div>';
  
             $data[] = $row;
@@ -64,9 +67,18 @@ class Sale extends CI_Controller {
     public function add()
     {
         if ($this->input->post('submit')) {
-
             $transaction_date = $this->input->post('transaction_date');
-            $customer_id = $this->input->post('customer_id');
+
+            if ($this->input->post('is_customer') != null) {
+                $customer_id = $this->input->post('customer_id');
+                $customer_name = getDataColumn('customers', 'id', $customer_id, 'name');
+                $is_customer = 1;
+            }
+            else {
+                $customer_id = null;
+                $customer_name = $this->input->post('customer_name');
+                $is_customer = 0;
+            }
             $note = $this->input->post('note');
             $method_id = $this->input->post('method_id');
 
@@ -81,7 +93,9 @@ class Sale extends CI_Controller {
 
 
             $dataInsert = array('transaction_date' => $transaction_date,
+                        'is_customer'  => $is_customer,
                         'customer_id'  => $customer_id,
+                        'customer_name'  => $customer_name,
                         'code'  => '-',
                         'total'  => $total,
                         'cash'  => $cash,
@@ -112,7 +126,7 @@ class Sale extends CI_Controller {
             $data['page']  = 'master';
             $data['customers'] = $this->customer->getAllData();
             $data['methods'] = $this->method->getAllData();
-            $data['items'] = $this->sale->getAllItems();
+            // $data['items'] = $this->sale->getAllItems();
             $this->load->view('sales/insert',$data);
         }
     }
@@ -125,7 +139,16 @@ class Sale extends CI_Controller {
         if ($this->input->post('submit')) {
 
             $transaction_date = $this->input->post('transaction_date');
-            $customer_id = $this->input->post('customer_id');
+            if ($this->input->post('is_customer') != 0) {
+                $customer_id = $this->input->post('customer_id');
+                $customer_name = getDataColumn('customers', 'id', $customer_id, 'name');
+                $is_customer = 1;
+            }
+            else {
+                $customer_id = null;
+                $customer_name = $this->input->post('customer_name');
+                $is_customer = 0;
+            }
             $note = $this->input->post('note');
             $method_id = $this->input->post('method_id');
 
@@ -140,8 +163,9 @@ class Sale extends CI_Controller {
 
 
             $dataUpdate = array('transaction_date' => $transaction_date,
+                        'is_customer'  => $is_customer,
                         'customer_id'  => $customer_id,
-                        'code'  => '-',
+                        'customer_name'  => $customer_name,
                         'total'  => $total,
                         'cash'  => $cash,
                         'changes' => $changes,
@@ -170,7 +194,7 @@ class Sale extends CI_Controller {
             $data['page']  = 'master';
             $data['customers'] = $this->customer->getAllData();
             $data['methods'] = $this->method->getAllData();
-            $data['items'] = $this->sale->getAllItems();
+            // $data['items'] = $this->sale->getAllItems();
             $this->load->view('sales/update',$data);
         }
     }
@@ -183,11 +207,30 @@ class Sale extends CI_Controller {
         redirect('sale');
     }
 
+    public function detail($id = '')
+    {
+        $data['title'] = 'Detail Data Penjualan';
+        $data['page']  = 'master';
+        $data['row'] = $this->sale->getDataById($id);
+        $data['details'] = $this->sale->getDataDetailByIdTrans($id);
+        $this->load->view('sales/detail',$data);
+    }
+
     public function getDataProduct()
     {
         $id = $this->input->post('id');
+        $is_customer = $this->input->post('is_customer');
         $row = $this->item->getDataById($id);
-        $data = array('price' => $row['salePrice'], 'stock' => $row['stock']);
+        $stock = $this->item->getAvailableStock($id);
+        if ($is_customer == 0) {
+            // $percentage = getDataColumn('percentages', 'label', 'harga-umum', 'amount');
+            // $price = $row['salePrice'] + (($row['salePrice']*$percentage)/100);
+            $price = $row['salePriceNon'];
+        }
+        else {
+            $price = $row['salePrice'];
+        }
+        $data = array('price' => $price, 'stock' => $stock);
         echo json_encode($data);
     }
 
@@ -207,6 +250,7 @@ class Sale extends CI_Controller {
                         'cash'  => $cash,
                         'changes' => $changes,
                         'method_id' => $method_id,
+                        'payment_at' => date('Y-m-d H:i:s'),
                         'is_cash'  => 1
                         );            
 
@@ -230,6 +274,41 @@ class Sale extends CI_Controller {
             $this->load->view('sales/pay',$data);
         }
     }
+
+    public function cetak($id = null)
+    {
+        $data['info'] = $this->paper->getDataDefault();
+        $data['row'] = $this->sale->getDataById($id);
+        $data['details'] = $this->sale->getDataDetailByIdTrans($id);
+        $this->load->view('sales/print', $data);
+    }
+
+    public function getAllItems()
+    {
+        $keyword = $this->input->post('term');
+        $page = $this->input->post('page');
+        $uid = $this->input->post('uid');
+        $resultCount = 25;
+        $offset = ($page - 1) * $resultCount;
+        $endCount = $offset + $resultCount;
+
+        $items = $this->sale->searchItems($keyword, $offset, $endCount, $uid);
+
+        $count = count($this->sale->searchItems($keyword, $offset, $endCount, $uid));
+
+        $morePages = $endCount <= $count;
+        $data = [];
+        foreach ($items as $key => $value) {
+            $stock = $this->item->getAvailableStock($value['id']);
+            if ($stock > 0) {
+                $dataColumn['text'] = $value['name'];
+                $dataColumn['id'] = $value['id'];
+                $data[] = $dataColumn;
+            }
+        }
+        echo json_encode(['results' => $data, 'pagination' => array('more' => $morePages)]);
+    }
+
 }
 
 /* End of file Sale.php */

@@ -16,6 +16,7 @@ class Operatormodel extends CI_Model {
         $this->db->order_by('name', 'asc');
         $this->db->where('deleted_at', null);
         $this->db->where('id !=', 1);
+        $this->db->where('id !=', 3);
         $query = $this->db->get($this->table);
         if ($query->num_rows() > 0) {
             return $query->result_array();

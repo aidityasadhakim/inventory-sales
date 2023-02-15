@@ -28,12 +28,8 @@
                   <div class="form-group row">
                     <label for="item_id" class="col-sm-2 col-form-label">Nama Barang</label>
                     <div class="col-sm-4">
-                      <select name="item_id" class="form-control select2" id="item_id" readonly>
-                        <option value="">--Pilih Barang--</option>
-                        <?php foreach ($items as $key => $value): ?>
-                        <option value="<?php echo $value['id'] ?>"<?php echo ($value['id'] == $row['item_id']) ? ' selected' : '' ?>><?php echo $value['name'] ?></option>
-                      <?php endforeach ?>
-                      </select>
+                      <input type="text" name="item_name" class="form-control" id="item_name" value="<?php echo getDataColumn('items', 'id', $row['item_id'], 'name') ?>" readonly>
+                      <input type="hidden" name="item_id" id="item_id" value="<?php echo $row['item_id'] ?>">
                     </div>
                   </div>
                   <div class="form-group row">
@@ -70,7 +66,33 @@
   $(function() {
     $('.select-product').select2({
         allowClear: true,
-        width: '100%'
+        width: '100%',
+        minimumInputLength: 2,
+        placeholder: '--Pilih Barang--',
+        delay: 250,
+        ajax: {
+          url: base_url + '/pending/getAllItems',
+          dataType: "json",
+          type: "POST",
+          data: function (params) {
+
+              var  arr = $.map
+              (
+                $(".item-id option:selected"), function(n)
+                 {
+                      return n.value;
+                  }
+              );
+
+              var queryParameters = {
+                  term: params.term,  
+                  uid: arr,
+                  page: params.page || 1
+              }
+              return queryParameters;
+          },
+          cache: true
+        }
     })
 
     $(document).keydown(function(e) {

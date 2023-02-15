@@ -28,9 +28,12 @@
     var base_url = '<?php echo base_url(); ?>';
 
     $(function () {
-        
+        $('#clearState').click(function(event) {
+          localStorage.clear();
+          window.location.reload();
+        });
         $('#data-table-item').DataTable({ 
- 
+            "stateSave": true,
             "processing": true, 
             "serverSide": true, 
             "order": [], 
@@ -107,6 +110,31 @@
         $('#data-table-supplier').DataTable();
 
         $('#data-table-return').DataTable();
+
+        $('#data-table-omzet').DataTable({ 
+            "stateSave": true,
+            "processing": true, 
+            "serverSide": true, 
+            "order": [], 
+             
+            "ajax": {
+                "url": "<?php echo base_url('report/getDataTableCustomersReport')?>",
+                "type": "POST",
+                "data": {
+                  "start_date": $('#start_date').val(),
+                  "end_date": $('#end_date').val(),
+                }
+            },
+ 
+             
+            "columnDefs": [
+            { 
+                "targets": [ 0 ], 
+                "orderable": false, 
+            },
+            ],
+ 
+        });
 
         $(".select2").select2({
           theme: 'bootstrap4'

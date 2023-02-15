@@ -15,6 +15,7 @@ class Purchasemodel extends CI_Model {
     var $table_item = 'items';
     var $table_payment = 'payment_methods';
     var $table_debt = 'debt_paids';
+    var $table_stock = 'stocks';
     var $column_order = array(null, 'transaction_date', 'supplier_id', 'code', 'total', 'cash', 'changes', 'method_id', 'is_cash', 'status', 'note');
     var $column_search = array('p.code', 'sup.name');
     var $order = array('p.id' => 'desc');
@@ -97,6 +98,21 @@ class Purchasemodel extends CI_Model {
         }
     }
 
+    public function searchItems($keyword, $offset, $limit, $uid)
+    {
+        $this->db->order_by('name', 'asc');
+        $this->db->where('deleted_at', null);
+        $this->db->where_not_in('id', $uid);
+        $this->db->like('name', $keyword);
+        $query = $this->db->get($this->table_item, $limit, $offset);
+        if ($query->num_rows() > 0) {
+            return $query->result_array();
+        }
+        else {
+            return array();
+        }
+    }
+
     public function getDataById($id)
     {
         $this->db->where('deleted_at', null);
@@ -112,6 +128,7 @@ class Purchasemodel extends CI_Model {
 
     public function getDataDetailByIdTrans($id)
     {
+        $this->db->select('purchase_details.id, purchase_details.purchase_id, purchase_details.item_id, purchase_details.qty, purchase_details.price, i.name, i.stock');
         $this->db->where('purchase_id', $id);
         $this->db->join('items as i', 'i.id = purchase_details.item_id');
         $query = $this->db->get($this->table_detail);
@@ -149,6 +166,11 @@ class Purchasemodel extends CI_Model {
                                     'price' => $data['price'][$key]
                                     );
             $this->db->insert($this->table_detail, $dataInsertDetail);
+
+            $dataUpdatePrice = array('buyPrice' => $data['price'][$key], 'updated_at' => date('Y-m-d H:i:s'));
+            $this->db->where('id', $value);
+            $this->db->update($this->table_item, $dataUpdatePrice);
+
             $dataInsertMutation = array('transaction_id' => $idx,
                                     'item_id' => $value,
                                     'amount' => $data['qty'][$key],
@@ -158,6 +180,16 @@ class Purchasemodel extends CI_Model {
             $this->db->insert('stock_mutations', $dataInsertMutation);
 
             $this->increaseStock($value, $data['qty'][$key]);
+
+            for ($i=0; $i < $data['qty'][$key]; $i++) { 
+                $dataInsertStock = array('purchase_id' => $idx, 
+                                    'item_id' => $value,
+                                    'qty' => 1,
+                                    'buyPrice' => $data['price'][$key],
+                                    'type' => 'purchase',
+                                    'created_at' => date('Y-m-d H:i:s'));
+                $this->db->insert($this->table_stock, $dataInsertStock);
+            }
 
         }
         $this->db->trans_commit();
@@ -185,7 +217,6 @@ class Purchasemodel extends CI_Model {
         $this->db->trans_begin();
         $dataUpdate = array('transaction_date' => $data['transaction_date'],
                         'supplier_id'  => $data['supplier_id'],
-                        'code'  => '-',
                         'total'  => $data['total'],
                         'cash'  => $data['cash'],
                         'changes' => $data['changes'],
@@ -195,7 +226,17 @@ class Purchasemodel extends CI_Model {
                         'note' => $data['note'],
                         'user_id' => $this->session->userdata('id'),
                         'updated_at' => date('Y-m-d H:i:s')
-                        ); 
+                        );
+
+        $this->db->where('purchase_id', $id);
+        $this->db->where('sale_id IS NOT NULL', null, false);
+        $row = $this->db->get($this->table_stock)->num_rows();
+
+        if ($row != 0) {
+            $this->db->trans_rollback();
+            return array('msg' => 'fail');
+        }
+
         $this->db->where('id', $id);
         $this->db->update($this->table, $dataUpdate);
 
@@ -206,6 +247,10 @@ class Purchasemodel extends CI_Model {
         $this->db->where('type', 'purchase');
         $this->db->delete('stock_mutations');
 
+        $this->db->where('purchase_id', $id);
+        $this->db->where('type', 'purchase');
+        $this->db->delete($this->table_stock);
+
         foreach ($data['item_ids'] as $key => $value) {
             $dataInsertDetail = array('purchase_id' => $id,
                                     'item_id' => $value,
@@ -213,15 +258,30 @@ class Purchasemodel extends CI_Model {
                                     'price' => $data['price'][$key]
                                     );
             $this->db->insert($this->table_detail, $dataInsertDetail);
+
+            $dataUpdatePrice = array('buyPrice' => $data['price'][$key], 'updated_at' => date('Y-m-d H:i:s'));
+            $this->db->where('id', $value);
+            $this->db->update($this->table_item, $dataUpdatePrice);
+
             $dataInsertMutation = array('transaction_id' => $id,
                                     'item_id' => $value,
-                                    'amount' => '-'.$data['qty'][$key],
+                                    'amount' => $data['qty'][$key],
                                     'type' => 'purchase',
                                     'created_at' => date('Y-m-d H:i:s')
                                     );
             $this->db->insert('stock_mutations', $dataInsertMutation);
 
             $this->increaseStock($value, $data['qty'][$key]);
+
+            for ($i=0; $i < $data['qty'][$key]; $i++) { 
+                $dataInsertStock = array('purchase_id' => $id, 
+                                    'item_id' => $value,
+                                    'qty' => 1,
+                                    'buyPrice' => $data['price'][$key],
+                                    'type' => 'purchase',
+                                    'created_at' => date('Y-m-d H:i:s'));
+                $this->db->insert($this->table_stock, $dataInsertStock);
+            }
 
         }
         $this->db->trans_commit();
@@ -238,6 +298,15 @@ class Purchasemodel extends CI_Model {
     public function deleteData($id)
     {
         $data = array('deleted_at' => date('Y-m-d H:i:s'));
+
+        $this->db->where('purchase_id', $id);
+        $this->db->where('sale_id IS NOT NULL', null, false);
+        $row = $this->db->get($this->table_stock)->num_rows();
+
+        if ($row != 0) {
+            return array('msg' => 'fail');
+        }
+
         $this->db->where('id',$id);
         $this->db->update($this->table,$data);
 
@@ -247,6 +316,12 @@ class Purchasemodel extends CI_Model {
         $this->db->where('transaction_id', $id);
         $this->db->where('type', 'purchase');
         $this->db->delete('stock_mutations');
+
+        $this->db->where('purchase_id', $id);
+        $this->db->where('type', 'purchase');
+        $this->db->delete($this->table_stock);
+
+        return array('msg' => 'success');
     }
 
     public function insertDataPay($data)

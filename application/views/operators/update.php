@@ -55,14 +55,14 @@
                   <div class="form-group row">
                     <label for="password" class="col-sm-2 col-form-label">Password</label>
                     <div class="col-sm-4">
-                      <input type="password" name="password" class="form-control" id="password" minlength="8">
+                      <input type="password" name="password" class="form-control" id="password" minlength="3">
                       <span class="badge badge-warning">Kosongkan jika tidak mengganti password</span>
                     </div>
                   </div>
                   <div class="form-group row">
                     <label for="confirm_password" class="col-sm-2 col-form-label">Konfirmasi Password</label>
                     <div class="col-sm-4">
-                      <input type="password" name="confirm_password" class="form-control" id="confirm_password" minlength="8">
+                      <input type="password" name="confirm_password" class="form-control" id="confirm_password" minlength="3">
                       <span class="badge badge-warning">Kosongkan jika tidak mengganti password</span>
                     </div>
                   </div>
